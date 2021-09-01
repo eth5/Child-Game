@@ -1,5 +1,5 @@
 # Child-Game
 
--In developing now...
+- In developing now...
 
-![](http://it-dev.pro/dev_git/sport-alarm/img.png)
+![](http://it-dev.pro/dev_git/child-game/img.png)
