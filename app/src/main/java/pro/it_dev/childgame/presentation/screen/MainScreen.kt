@@ -238,7 +238,10 @@ fun AnimatedOnClickImage(
 		bitmap = image,
 		contentDescription = null,
 		modifier = modifier
-			.offset(anim)
+			.offset(
+				anim * if (Math.random()<0.5f) -1 else 1,
+				anim * if (Math.random()<0.5f) -1 else 1
+			)
 			.clickable {
 				onClick()
 				scope.launch {
