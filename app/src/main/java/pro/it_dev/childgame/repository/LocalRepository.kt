@@ -1,53 +1,62 @@
 package pro.it_dev.childgame.repository
 
-import android.content.res.AssetManager
+import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.asImageBitmap
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.domain.ItemsGroup
 import pro.it_dev.childgame.util.Resource
-import pro.it_dev.childgame.util.fileToBitmap
 
-//todo переписать AssetManager на абстракцию
-class LocalRepository(private val am: AssetManager) : IRepository {
 
-	override fun getScreenData(itemsPath: String): Resource<CardsKit> {
+class LocalRepository(private val fm: IFileManager) : IRepository {
+
+	override suspend fun getScreenData(itemsPath: String): Resource<CardsKit> {
 		return Resource.Success(getCardsFrom(itemsPath))
 	}
 
-	private fun getCardsFrom(kitPath: String): CardsKit {
-
-		val itemFiles = am.list("$kitPath/items") ?: throw java.lang.NullPointerException(kitPath)
+	private suspend fun getCardsFrom(kitPath: String): CardsKit {
+		val itemFiles = fm.getFileNamesInPath("$kitPath/items").data!!
 
 		return CardsKit(
 			kitPath,
 			mutableListOf<ItemsGroup>().apply {
 				itemFiles.forEach {
-					add( createVerticalLineItemsFromPath("$kitPath/items/$it", am) )
+					add(createVerticalLineItemsFromPath("$kitPath/items/$it", fm))
 				}
 			}
 		)
 	}
 
-	private fun createVerticalLineItemsFromPath(
+	private suspend fun createVerticalLineItemsFromPath(
 		path: String,
-		am: AssetManager
+		fm: IFileManager
 	): ItemsGroup {
-		val files = am.list(path)!!.filter { it != "head" }
+		val files = fm.getFileNamesInPath(path).data!!.filter { it != "head" }
 
 		val small = mutableListOf<Item>().apply {
 			files.forEach {
 				val pathToItemData = "$path/$it"
-				val img = am.fileToBitmap("$pathToItemData/img.png")?.asImageBitmap()
-					?: throw NullPointerException(pathToItemData)
-				// add( Item(name  = pathToItemData, img = img, fx = "$pathToItemData/fx.ogg"))
-				add( Item(name  = pathToItemData, img = "$pathToItemData/img.png", fx = listOf("$pathToItemData/fx.ogg")))
+				val img = fm.getInputStream("$pathToItemData/img.png").data!!.use {
+					BitmapFactory.decodeStream(it)
+				}.asImageBitmap()
+				add(
+					Item(
+						name = pathToItemData,
+						img = "$pathToItemData/img.png",
+						fx = listOf("$pathToItemData/fx.ogg")
+					)
+				)
 			}
 		}
-		val big = am.fileToBitmap("$path/head/img.png")?.asImageBitmap()
-			?: throw NullPointerException("$path/head/img.png")
-		val fxs = am.list("$path/head/music")?.map { "$path/head/music/$it" } ?: emptyList()
-		return ItemsGroup(Item(name = "$path/head/img.png", img = "$path/head/img.png", fx = fxs), small)
+		val big =
+			fm.getInputStream("$path/head/img.png").data!!.use { BitmapFactory.decodeStream(it) }
+				.asImageBitmap()
+		val fxs = fm.getFileNamesInPath("$path/head/music").data?.map { "$path/head/music/$it" }
+			?: emptyList()
+		return ItemsGroup(
+			Item(name = "$path/head/img.png", img = "$path/head/img.png", fx = fxs),
+			small
+		)
 	}
 
 

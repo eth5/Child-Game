@@ -10,6 +10,8 @@ import pro.it_dev.childgame.presentation.android_bitmap_factory.AssetsFilesBitma
 import pro.it_dev.childgame.presentation.android_bitmap_factory.IBitmapFactory
 import pro.it_dev.childgame.presentation.fxplayer.AssetAndroidMediaPlayer
 import pro.it_dev.childgame.presentation.fxplayer.IFxPlayer
+import pro.it_dev.childgame.repository.AssetFileManager
+import pro.it_dev.childgame.repository.IFileManager
 import pro.it_dev.childgame.repository.IRepository
 import pro.it_dev.childgame.repository.LocalRepository
 import javax.inject.Singleton
@@ -20,9 +22,15 @@ object AppModule {
 
 	@Singleton
 	@Provides
-	fun provideRepository(@ApplicationContext ctx: Context): IRepository{
-		return LocalRepository(ctx.assets)
+	fun provideRepository(fm: IFileManager): IRepository{
+		return LocalRepository(fm)
 	}
+	@Singleton
+	@Provides
+	fun provideFileManager(@ApplicationContext ctx: Context): IFileManager{
+		return AssetFileManager(ctx.assets)
+	}
+
 	@Singleton
 	@Provides
 	fun provideFxPlayer(@ApplicationContext ctx: Context): IFxPlayer{
@@ -30,7 +38,7 @@ object AppModule {
 	}
 	@Singleton
 	@Provides
-	fun provideBitmapFactory(@ApplicationContext ctx: Context): IBitmapFactory{
-		return AssetsFilesBitmapFactory(ctx.assets)
+	fun provideBitmapFactory(fm: IFileManager): IBitmapFactory{
+		return AssetsFilesBitmapFactory(fm)
 	}
 }

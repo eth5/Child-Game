@@ -30,8 +30,6 @@ import pro.it_dev.childgame.util.fileToBitmap
 
 @Composable
 fun MainScreen(itemsPath: String, viewModel: MainScreenViewModel = hiltViewModel()) {
-
-
 	val scaffoldState = rememberScaffoldState()
 	Scaffold(
 		scaffoldState = scaffoldState,
