@@ -1,6 +1,10 @@
 package pro.it_dev.childgame.presentation.screen
 
+import android.graphics.drawable.AnimatedImageDrawable
 import android.widget.Toast
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,15 +20,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.util.Resource
 import pro.it_dev.childgame.util.fileToBitmap
 
 @Composable
-fun MainScreen(itemsPath:String, viewModel: MainScreenViewModel = hiltViewModel()) {
-
-
+fun MainScreen(itemsPath: String, viewModel: MainScreenViewModel = hiltViewModel()) {
 
 
 	val scaffoldState = rememberScaffoldState()
@@ -34,7 +39,7 @@ fun MainScreen(itemsPath:String, viewModel: MainScreenViewModel = hiltViewModel(
 		modifier = Modifier
 			.fillMaxSize()
 	) {
-		LaunchedEffect(key1 = itemsPath, block = {viewModel.loadCards(itemsPath)})
+		LaunchedEffect(key1 = itemsPath, block = { viewModel.loadCards(itemsPath) })
 
 		val screenData by remember {
 			viewModel.cardsKit
@@ -73,17 +78,18 @@ fun MainScreen(itemsPath:String, viewModel: MainScreenViewModel = hiltViewModel(
 
 	}
 }
+
 @Composable
 fun ShowMessage(messageState: MutableState<String>, scaffoldState: ScaffoldState) {
 	var text by remember { messageState }
-	if (text.isNotEmpty()){
+	if (text.isNotEmpty()) {
 		LaunchedEffect(key1 = "") {
 			scaffoldState.snackbarHostState.showSnackbar(text)
 			text = ""
 		}
 	}
-
 }
+
 @Composable
 fun BottomButtons(modifier: Modifier = Modifier, viewModel: MainScreenViewModel = hiltViewModel()) {
 	Row(
@@ -123,7 +129,10 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: MainScreenViewModel 
 
 
 @Composable
-fun ScreenDataStateWrapper(cardsKit: Resource<CardsKit>, viewModel: MainScreenViewModel = hiltViewModel()) {
+fun ScreenDataStateWrapper(
+	cardsKit: Resource<CardsKit>,
+	viewModel: MainScreenViewModel = hiltViewModel()
+) {
 	when (cardsKit) {
 		is Resource.Loading -> {
 			Box(
@@ -138,13 +147,22 @@ fun ScreenDataStateWrapper(cardsKit: Resource<CardsKit>, viewModel: MainScreenVi
 			) { Text(text = cardsKit.message ?: "Unknown error!", color = Color.Red) }
 		}
 		is Resource.Success -> {
-			CardItems(cardsKit = cardsKit.data!!, imageBitmapCreator = viewModel::getBitmap, viewModel::clickIcon)
+			CardItems(
+				cardsKit = cardsKit.data!!,
+				imageBitmapCreator = viewModel::getBitmap,
+				viewModel::clickIcon
+			)
 		}
 	}
 }
 
 @Composable
-fun CardItems(cardsKit: CardsKit, imageBitmapCreator:suspend (String)->ImageBitmap, onClick: (Item) -> Unit) {
+fun CardItems(
+	cardsKit: CardsKit,
+	imageBitmapCreator: suspend (String) -> ImageBitmap,
+	onClick: (Item) -> Unit
+) {
+	val scope = rememberCoroutineScope()
 	Column(
 		modifier = Modifier.fillMaxSize(),
 		horizontalAlignment = Alignment.CenterHorizontally,
@@ -162,15 +180,15 @@ fun CardItems(cardsKit: CardsKit, imageBitmapCreator:suspend (String)->ImageBitm
 					horizontalAlignment = Alignment.CenterHorizontally,
 					verticalArrangement = Arrangement.Center
 				) {
-					val headImg by produceState<ImageBitmap?>(initialValue = null){ value = imageBitmapCreator(it.bigItem.img) }
-					if(headImg!=null){
-						Image(
-							bitmap = headImg!!,
-							contentDescription = null,
-							modifier = Modifier
-								.aspectRatio(1f)
-								.clickable { onClick(it.bigItem) }
-						)
+					val headImg by produceState<ImageBitmap?>(initialValue = null) {
+						value = imageBitmapCreator(it.bigItem.img)
+					}
+					if (headImg != null) {
+						AnimatedOnClickImage(
+							image = headImg!!,
+							scope = scope,
+							modifier = Modifier.aspectRatio(1f)
+						) { onClick(it.bigItem) }
 					}
 
 					Spacer(modifier = Modifier.height(5.dp))
@@ -184,15 +202,15 @@ fun CardItems(cardsKit: CardsKit, imageBitmapCreator:suspend (String)->ImageBitm
 						) {
 							for (offset in 0..1) {
 								val item by remember { derivedStateOf { it.items[i + offset] } } //todo ????
-								val imageBitmap by produceState<ImageBitmap?>(initialValue = null){ value = imageBitmapCreator(item.img) }
-								if (imageBitmap!=null){
-									Image(
-										bitmap = imageBitmap!!,
-										contentDescription = null,
-										modifier = Modifier
-											.weight(1f, fill = false)
-											.clickable { onClick(item) }
-									)
+								val imageBitmap by produceState<ImageBitmap?>(initialValue = null) {
+									value = imageBitmapCreator(item.img)
+								}
+								if (imageBitmap != null) {
+									AnimatedOnClickImage(
+										image = imageBitmap!!,
+										scope = scope,
+										modifier = Modifier.weight(1f, fill = false)
+									) { onClick(item) }
 								}
 
 							}
@@ -202,4 +220,34 @@ fun CardItems(cardsKit: CardsKit, imageBitmapCreator:suspend (String)->ImageBitm
 			}
 		}
 	}
+}
+
+@Composable
+fun AnimatedOnClickImage(
+	image: ImageBitmap,
+	scope: CoroutineScope,
+	modifier: Modifier,
+	onClick: () -> Unit
+) {
+	var offset by remember {
+		mutableStateOf(0.dp)
+	}
+	val anim by animateDpAsState(
+		targetValue = offset,
+		animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)
+	)
+	Image(
+		bitmap = image,
+		contentDescription = null,
+		modifier = modifier
+			.offset(anim)
+			.clickable {
+				onClick()
+				scope.launch {
+					offset = 5.dp
+					delay(100)
+					offset = 0.dp
+				}
+			}
+	)
 }
