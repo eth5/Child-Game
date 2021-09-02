@@ -4,17 +4,20 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
-import com.google.android.material.math.MathUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
-import pro.it_dev.childgame.presentation.android_bitmap_factory.AssetsFilesBitmapFactory
 import pro.it_dev.childgame.presentation.android_bitmap_factory.IBitmapFactory
 import pro.it_dev.childgame.presentation.fxplayer.IFxPlayer
 import pro.it_dev.childgame.repository.IRepository
 import pro.it_dev.childgame.util.Resource
 import javax.inject.Inject
+
+enum class ScreenState{
+	DEFAULT,
+	QUESTION,
+	MUSIC
+}
 
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
@@ -23,13 +26,15 @@ class MainScreenViewModel @Inject constructor(
 	private val bitmapFactory: IBitmapFactory
 	) : ViewModel() {
 
-	private val _cards = mutableStateOf<Resource<CardsKit>>(Resource.Loading())
-	val cardsKit:State<Resource<CardsKit>> get() = _cards
+	private val _cardsKit = mutableStateOf<Resource<CardsKit>>(Resource.Loading())
+	val cardsKit:State<Resource<CardsKit>> get() = _cardsKit
 
 	val popUpMessage = mutableStateOf("")
 
+	val state = mutableStateOf(ScreenState.DEFAULT)
+
 	suspend fun loadCards(itemsPath: String){
-		_cards.value = repository.getScreenData(itemsPath)
+		_cardsKit.value = repository.getCardsKit(itemsPath)
 
 	}
 
@@ -43,7 +48,8 @@ class MainScreenViewModel @Inject constructor(
 	}
 
 	fun pressQuest(){
-
+		val riddles = cardsKit.value.data!!.riddlesGroupList.random()
+		fxPlayer.play(riddles.fxPath)
 	}
 	fun pressRepeat(){
 

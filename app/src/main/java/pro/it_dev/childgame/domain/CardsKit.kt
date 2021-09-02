@@ -1,14 +1,11 @@
 package pro.it_dev.childgame.domain
 
+import pro.it_dev.childgame.domain.riddles.RiddlesGroup
+
 class CardsKit(
 	val kitPath: String,
-	val list: List<ItemsGroup>,
-) {
-	enum class State{
-		DEFAULT,
-		QUESTION,
-		MUSIC
-	}
-	var state = State.DEFAULT
+	val itemsGroupList: List<ItemsGroup>,
+	val riddlesGroupList: List<RiddlesGroup>
+	) {
 
 }

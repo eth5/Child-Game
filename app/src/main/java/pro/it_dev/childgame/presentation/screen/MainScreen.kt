@@ -1,7 +1,5 @@
 package pro.it_dev.childgame.presentation.screen
 
-import android.graphics.drawable.AnimatedImageDrawable
-import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -170,7 +168,7 @@ fun CardItems(
 			modifier = Modifier
 				.border(1.dp, Color.Red)
 		) {
-			cardsKit.list.forEach {
+			cardsKit.itemsGroupList.forEach {
 				Column(
 					modifier = Modifier
 						.weight(1f, fill = false)

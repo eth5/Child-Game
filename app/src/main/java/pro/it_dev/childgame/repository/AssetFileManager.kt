@@ -12,7 +12,7 @@ class AssetFileManager(private val am: AssetManager): IFileManager {
 	}
 
 	override suspend fun getInputStream(path: String): Resource<InputStream> {
-		val inputStream = am.open(path)
+		val inputStream = am.open(path) //todo need error handle
 		return Resource.Success(inputStream)
 	}
 
