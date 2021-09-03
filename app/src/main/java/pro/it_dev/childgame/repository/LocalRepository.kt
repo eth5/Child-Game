@@ -2,32 +2,90 @@ package pro.it_dev.childgame.repository
 
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.domain.ItemsGroup
+import pro.it_dev.childgame.domain.riddles.Riddle
+import pro.it_dev.childgame.domain.riddles.RiddlesGroup
 import pro.it_dev.childgame.util.Resource
 
 
 class LocalRepository(private val fm: IFileManager) : IRepository {
 
-	override suspend fun getScreenData(itemsPath: String): Resource<CardsKit> {
+	override suspend fun getCardsKit(itemsPath: String): Resource<CardsKit> {
 		return Resource.Success(getCardsFrom(itemsPath))
 	}
 
 	private suspend fun getCardsFrom(kitPath: String): CardsKit {
-		val itemFiles = fm.getFileNamesInPath("$kitPath/items").data!!
+		val itemFiles = fm.getFileNamesInPath("$kitPath/items").data!!.shuffled()
 
 		return CardsKit(
-			kitPath,
-			mutableListOf<ItemsGroup>().apply {
+			kitPath = kitPath,
+			itemsGroupList = mutableListOf<ItemsGroup>().apply {
 				itemFiles.forEach {
-					add(createVerticalLineItemsFromPath("$kitPath/items/$it", fm))
+					add(
+						createItemsGroupFrom("$kitPath/items/$it", fm)
+					)
 				}
-			}
+			},
+			riddlesGroupList = createKitRiddlesGroupFrom(kitPath, fm)
 		)
 	}
 
-	private suspend fun createVerticalLineItemsFromPath(
+	private fun createKitRiddlesGroupFrom(
+		cardKitPath: String,
+		fm: IFileManager
+	): List<RiddlesGroup> {
+		val riddlesKitDataPath = "$cardKitPath/riddles"
+
+		return runBlocking(Dispatchers.IO) { fm.getFileNamesInPath(riddlesKitDataPath).data!! }
+			.map {
+				val riddlesDataFromFile = runBlocking(Dispatchers.IO) {
+					fm.getInputStream(path = "$riddlesKitDataPath/$it/title.txt").data!!.bufferedReader()
+						.use { it.readLines() }
+				}.toMutableList()
+				val riddleGroupName = riddlesDataFromFile.removeAt(0)
+
+				val riddlesList = mutableListOf<Riddle>()
+				riddlesDataFromFile.forEach {
+					riddlesList.addAll(
+						createRiddlesOfItem("$cardKitPath/items/$it","riddles", fm)
+					)
+				}
+				RiddlesGroup(
+					info = RiddlesGroup.GroupInfo(
+						name = riddleGroupName,
+						startFxPath = "$riddlesKitDataPath/$it/title.ogg",
+						errorFxPath = "$cardKitPath/wrong.ogg",
+						),
+					riddlesList = riddlesList
+				)
+			}
+
+	}
+
+
+	private fun createRiddlesOfItem(pathToItem: String, riddlesDir:String, fm: IFileManager): List<Riddle> {
+		return mutableListOf<Riddle>().apply {
+
+			val fullPath = "$pathToItem/$riddlesDir"
+			val files = runBlocking (Dispatchers.IO){ fm.getFileNamesInPath(fullPath).data!! }
+
+			files.forEach {
+				add(
+					Riddle(
+						validAnswer = pathToItem,
+						questionFx = "$fullPath/$it/q.ogg",
+						answerFx = "$fullPath/$it/a.ogg"
+					)
+				)
+			}
+		}
+	}
+
+	private suspend fun createItemsGroupFrom(
 		path: String,
 		fm: IFileManager
 	): ItemsGroup {

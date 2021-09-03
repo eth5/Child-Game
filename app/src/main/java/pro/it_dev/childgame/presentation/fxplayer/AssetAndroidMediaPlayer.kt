@@ -9,11 +9,26 @@ class AssetAndroidMediaPlayer(private val context: Context): IFxPlayer {
 		it.setOnPreparedListener { mp->
 			mp.start()
 		}
+		it.setOnCompletionListener {
+			endPlayCallback?.invoke()
+		}
 	}
+	private var endPlayCallback:(()->Unit)? = null
 	private var isDisposed = false
-	override fun play(file: String) {
+
+	override val isPlaying: Boolean
+		get() = mediaPlayer.isPlaying
+
+	override fun setVolume(volume: Float) {
+		mediaPlayer.setVolume(volume,volume)
+	}
+
+	override fun play(file: String, onEndPlay:(()->Unit)?) {
 		if (isDisposed) throw IllegalStateException("MediaPlayer isDisposed!")
+
 		mediaPlayer.reset()
+		endPlayCallback = onEndPlay
+
 		context.assets.openFd(file).use {
 			mediaPlayer.setDataSource(it.fileDescriptor, it.startOffset, it.declaredLength)
 			mediaPlayer.prepare()
@@ -21,7 +36,7 @@ class AssetAndroidMediaPlayer(private val context: Context): IFxPlayer {
 	}
 
 	override fun stop() {
-		mediaPlayer.stop()
+		if (mediaPlayer.isPlaying) mediaPlayer.stop()
 	}
 
 	override fun dispose() {
