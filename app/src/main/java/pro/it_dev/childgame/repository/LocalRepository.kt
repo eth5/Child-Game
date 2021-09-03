@@ -19,7 +19,7 @@ class LocalRepository(private val fm: IFileManager) : IRepository {
 	}
 
 	private suspend fun getCardsFrom(kitPath: String): CardsKit {
-		val itemFiles = fm.getFileNamesInPath("$kitPath/items").data!!
+		val itemFiles = fm.getFileNamesInPath("$kitPath/items").data!!.shuffled()
 
 		return CardsKit(
 			kitPath = kitPath,
@@ -51,12 +51,15 @@ class LocalRepository(private val fm: IFileManager) : IRepository {
 				val riddlesList = mutableListOf<Riddle>()
 				riddlesDataFromFile.forEach {
 					riddlesList.addAll(
-						createRiddlesOfItem("$cardKitPath/items/$it", fm)
+						createRiddlesOfItem("$cardKitPath/items/$it","riddles", fm)
 					)
 				}
 				RiddlesGroup(
-					name = riddleGroupName,
-					fxPath = "$riddlesKitDataPath/$it/title.ogg",
+					info = RiddlesGroup.GroupInfo(
+						name = riddleGroupName,
+						startFxPath = "$riddlesKitDataPath/$it/title.ogg",
+						errorFxPath = "$cardKitPath/wrong.ogg",
+						),
 					riddlesList = riddlesList
 				)
 			}
@@ -64,15 +67,18 @@ class LocalRepository(private val fm: IFileManager) : IRepository {
 	}
 
 
-	private fun createRiddlesOfItem(pathToItem: String, fm: IFileManager): List<Riddle> {
+	private fun createRiddlesOfItem(pathToItem: String, riddlesDir:String, fm: IFileManager): List<Riddle> {
 		return mutableListOf<Riddle>().apply {
-			val files = runBlocking { fm.getFileNamesInPath("$pathToItem/riddles").data!! }
+
+			val fullPath = "$pathToItem/$riddlesDir"
+			val files = runBlocking (Dispatchers.IO){ fm.getFileNamesInPath(fullPath).data!! }
+
 			files.forEach {
 				add(
 					Riddle(
-						item = pathToItem,
-						questionFx = "$pathToItem/riddles/$it/q.ogg",
-						answerFx = "$pathToItem/riddles/$it/a.ogg"
+						validAnswer = pathToItem,
+						questionFx = "$fullPath/$it/q.ogg",
+						answerFx = "$fullPath/$it/a.ogg"
 					)
 				)
 			}
