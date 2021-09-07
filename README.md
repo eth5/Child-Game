@@ -2,4 +2,5 @@
 
 - In developing now...
 
-![](http://it-dev.pro/dev_git/child-game/img.png)
+old -> ![](http://it-dev.pro/dev_git/child-game/img.png)
+now -> ![](http://it-dev.pro/dev_git/child-game/screen_now.jpn)
