@@ -1,33 +1,38 @@
 package pro.it_dev.childgame.presentation.screen
 
-import android.graphics.ColorSpace
 import android.view.Gravity
+import android.view.MotionEvent
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,10 +44,9 @@ import kotlinx.coroutines.launch
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.util.Resource
-import pro.it_dev.childgame.util.fileToBitmap
 
 @Composable
-fun CardsScreen(itemsPath: String, viewModel: MainScreenViewModel = hiltViewModel()) {
+fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewModel()) {
 
 	LaunchedEffect(key1 = itemsPath, block = { viewModel.loadCards(itemsPath) })
 
@@ -53,28 +57,39 @@ fun CardsScreen(itemsPath: String, viewModel: MainScreenViewModel = hiltViewMode
 		modifier = Modifier.fillMaxSize(),
 		contentAlignment = Alignment.TopCenter
 	) {
-
-		Text(
-			text = buildAnnotatedString {
-				var color = Color.Blue
-				"АЗБУКВАРИК".forEach {
-					color = if (color == Color.Red) Color.Blue else Color.Red
-					withStyle(style = SpanStyle(color = color)) {
-						append(it)
+		val headImg by produceState<ImageBitmap?>(initialValue = null) {
+			value = viewModel.getBitmap(screenData.data!!.kitPath+"/bg.jpg")
+		}
+		if (headImg!=null) Image(
+			bitmap = headImg!!,
+			contentDescription = null,
+			modifier = Modifier.fillMaxSize(),
+			contentScale = ContentScale.FillBounds)
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally
+		) {
+			Text(
+				text = buildAnnotatedString {
+					var color = Color.Blue
+					withStyle(style = SpanStyle(color = color,fontSize = 40.sp)) {
+						append("А")
 					}
+					"ЗБУКВАРИ".forEach {
+						color = if (color == Color.Red) Color.Blue else Color.Red
+						withStyle(style = SpanStyle(color = color)) {
+							append(it)
+						}
+					}
+					withStyle(style = SpanStyle(color = if (color == Color.Red) Color.Blue else Color.Red,fontSize = 40.sp)) {
+						append("К")
+					}
+				},
+				fontSize = 30.sp,
+				fontWeight = FontWeight.Bold,
+				modifier = Modifier
+			)
 
-				}
-			},
-			fontSize = 35.sp,
-			fontWeight = FontWeight.Bold,
-			modifier = Modifier.border(1.dp, Color.Red)
-		)
-
-		Column(horizontalAlignment = Alignment.CenterHorizontally) {
-			Spacer(modifier = Modifier.height(20.dp))
-			Box(modifier = Modifier.weight(1f)) {
-				ScreenCardsStateWrapper(cardsKit = screenData)
-			}
+			ScreenCardsStateWrapper(modifier = Modifier.weight(1f),cardsKit = screenData)
 
 			BottomButtons(
 				modifier = Modifier
@@ -126,7 +141,7 @@ fun ShowMessage(messageState: MutableState<Int>) {
 }
 
 @Composable
-fun BottomButtons(modifier: Modifier = Modifier, viewModel: MainScreenViewModel = hiltViewModel()) {
+fun BottomButtons(modifier: Modifier = Modifier, viewModel: CardScreenViewModel = hiltViewModel()) {
 	Row(
 		modifier = modifier,
 		horizontalArrangement = Arrangement.Center
@@ -134,73 +149,62 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: MainScreenViewModel 
 		val state by remember {
 			viewModel.state
 		}
-		IconButton(
-			modifier = Modifier
-				.aspectRatio(1.3f)
-				.weight(1f, false)
-				.border(2.dp, color = Color.Black, MaterialTheme.shapes.medium)
-				.background(
-					if (state == ScreenState.QUESTION) LocalContentColor.current.copy(
-						alpha = LocalContentAlpha.current,
-						red = 0f,
-						green = 0.4f,
-						blue = 0f
-					) else MaterialTheme.colors.secondary,
-					MaterialTheme.shapes.medium
-				),
+		BottomIconButton(
+			icon = Icons.Default.HelpOutline,
+			bgColor = if (state == ScreenState.QUESTION) LocalContentColor.current.copy(
+				alpha = LocalContentAlpha.current,
+				red = 0f,
+				green = 0.7f,
+				blue = 0f
+			) else MaterialTheme.colors.secondary,
+			modifier = Modifier.weight(1f, false),
 			onClick = viewModel::pressQuest
-		) {
-			Icon(
-				imageVector = Icons.Default.HelpOutline,
-				modifier = Modifier.fillMaxSize(),
-				contentDescription = "",
-				tint = MaterialTheme.colors.onSecondary
-			)
-		}
+		)
 		Spacer(modifier = Modifier.width(50.dp))
-		IconButton(
-			modifier = Modifier
-				.aspectRatio(1.3f)
-				.weight(1f, false)
-				.border(2.dp, color = Color.Black, MaterialTheme.shapes.medium)
-				.background(MaterialTheme.colors.secondary, MaterialTheme.shapes.medium),
+		BottomIconButton(
+			icon = Icons.Default.Replay,
+			bgColor = MaterialTheme.colors.secondary,
+			modifier = Modifier.weight(1f, false),
 			onClick = viewModel::pressRepeat
-		) {
-			Icon(
-				imageVector = Icons.Default.Replay,
-				modifier = Modifier.fillMaxSize(),
-				contentDescription = "",
-				tint = MaterialTheme.colors.onSecondary
-			)
-		}
-
+		)
 		Spacer(modifier = Modifier.width(50.dp))
-		IconButton(
-			modifier = Modifier
-				.aspectRatio(1.3f)
-				.weight(1f, false)
-				.border(2.dp, color = Color.Black, MaterialTheme.shapes.medium)
-				.background(
-					color = if (state == ScreenState.DEFAULT)
-						LocalContentColor.current.copy(
-							alpha = LocalContentAlpha.current,
-							red = 0f,
-							green = 0.4f,
-							blue = 0f
-						)
-					else
-						MaterialTheme.colors.secondary,
-					shape = MaterialTheme.shapes.medium
-				),
+		BottomIconButton(
+			icon = Icons.Default.InsertEmoticon,
+			bgColor = if (state == ScreenState.DEFAULT)
+				LocalContentColor.current.copy(
+					alpha = LocalContentAlpha.current,
+					red = 0f,
+					green = 0.7f,
+					blue = 0f
+				)
+			else
+				MaterialTheme.colors.secondary,
+			modifier = Modifier.weight(1f, false),
 			onClick = viewModel::pressMan
-		) {
-			Icon(
-				imageVector = Icons.Default.InsertEmoticon,
-				modifier = Modifier.fillMaxSize(),
-				contentDescription = "",
-				tint = MaterialTheme.colors.onSecondary
-			)
-		}
+		)
+	}
+}
+
+@Composable
+fun BottomIconButton(icon: ImageVector, bgColor:Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+	IconButton(
+		modifier = modifier
+			.aspectRatio(1.3f)
+			.border(2.dp, color = Color(0xFF_3787A1), MaterialTheme.shapes.medium)
+			.background(
+				color = bgColor,
+				shape = MaterialTheme.shapes.medium
+			),
+		onClick = onClick
+	) {
+		Icon(
+			imageVector = icon,
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(2.dp),
+			contentDescription = "",
+			tint = MaterialTheme.colors.onSecondary
+		)
 	}
 }
 
@@ -208,30 +212,28 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: MainScreenViewModel 
 @Composable
 fun ScreenCardsStateWrapper(
 	cardsKit: Resource<CardsKit>,
-	viewModel: MainScreenViewModel = hiltViewModel()
+	modifier: Modifier,
+	viewModel: CardScreenViewModel = hiltViewModel()
 ) {
-	when (cardsKit) {
-		is Resource.Loading -> {
-			Box(
-				modifier = Modifier.fillMaxSize(),
-				contentAlignment = Alignment.Center
-			) { CircularProgressIndicator() }
-		}
-		is Resource.Error -> {
-			Box(
-				modifier = Modifier.fillMaxSize(),
-				contentAlignment = Alignment.Center
-			) { Text(text = cardsKit.message ?: "Unknown error!", color = Color.Red) }
-		}
-		is Resource.Success -> {
-			CardItems(
-				cardsKit = cardsKit.data!!,
-				imageBitmapCreator = viewModel::getBitmap,
-				viewModel::clickIcon
-			)
+	Box(
+		modifier = modifier.fillMaxSize(),
+		contentAlignment = Alignment.Center
+	) {
+		when (cardsKit) {
+			is Resource.Loading -> CircularProgressIndicator()
+			is Resource.Error -> Text(text = cardsKit.message ?: "Unknown error!", color = Color.Red)
+			is Resource.Success -> {
+				CardItems(
+					cardsKit = cardsKit.data!!,
+					imageBitmapCreator = viewModel::getBitmap,
+					viewModel::clickIcon
+				)
+			}
 		}
 	}
+
 }
+
 
 @Composable
 fun CardItems(
@@ -240,25 +242,31 @@ fun CardItems(
 	onClick: (Item) -> Unit
 ) {
 	val scope = rememberCoroutineScope()
-	Column(
+	Row(
 		modifier = Modifier.fillMaxSize(),
-		horizontalAlignment = Alignment.CenterHorizontally,
-		verticalArrangement = Arrangement.Center
+		horizontalArrangement = Arrangement.Center,
+		verticalAlignment = Alignment.CenterVertically
 	) {
-		Row(
-			modifier = Modifier
-		) {
-			cardsKit.itemsGroupList.forEach {
-				Column(
+		cardsKit.itemsGroupList.forEach {
+			Column(
+				modifier = Modifier
+					.fillMaxHeight()
+					.weight(1f, true)
+					.padding(1.dp)
+				,
+				horizontalAlignment = Alignment.CenterHorizontally,
+				verticalArrangement = Arrangement.Center
+			) {
+				val headImg by produceState<ImageBitmap?>(initialValue = null) {
+					value = imageBitmapCreator(it.bigItem.img)
+				}
+				MyCard(
 					modifier = Modifier
+						.padding(1.dp)
 						.weight(1f, fill = false)
-						.padding(1.dp),
-					horizontalAlignment = Alignment.CenterHorizontally,
-					verticalArrangement = Arrangement.Center
+						.aspectRatio(1f)
+
 				) {
-					val headImg by produceState<ImageBitmap?>(initialValue = null) {
-						value = imageBitmapCreator(it.bigItem.img)
-					}
 					if (headImg != null) {
 						AnimatedOnClickImage(
 							image = headImg!!,
@@ -268,35 +276,48 @@ fun CardItems(
 								.size(10.dp)
 						) { onClick(it.bigItem) }
 					}
+				}
 
-					Spacer(modifier = Modifier.height(5.dp))
+				//Spacer(modifier = Modifier.height(5.dp))
 
-					for (i in 0..it.items.lastIndex step 2) {
-						Row(
-							modifier = Modifier
-								.padding(1.dp)
-								.weight(1f, fill = false),
-							horizontalArrangement = Arrangement.Center,
-							verticalAlignment = CenterVertically
-						) {
-							for (offset in 0..1) {
-								MyCard(
-									modifier = Modifier
-										//.requiredSize(50.dp)
-										.padding(1.dp)
-										.aspectRatio(1f)
-										.weight(1f, fill = false)
-								) {
-									val item by remember { derivedStateOf { it.items[i + offset] } } //todo ????
-									val imageBitmap by produceState<ImageBitmap?>(initialValue = null) {
-										value = imageBitmapCreator(item.img)
-									}
-									if (imageBitmap != null) {
-										AnimatedOnClickImage(
-											image = imageBitmap!!,
-											scope = scope,
-											modifier = Modifier
-										) { onClick(item) }
+				for (i in 0..it.items.lastIndex step 2) {
+					Row(
+						modifier = Modifier
+							,//.weight(1f, fill = false),
+						horizontalArrangement = Arrangement.Center,
+						verticalAlignment = CenterVertically
+					) {
+						for (offset in 0..1) {
+							var scale by remember { mutableStateOf(1f) }
+							val animateScale by animateFloatAsState(
+								targetValue = scale,
+								animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)
+							)
+							MyCard(
+								modifier = Modifier
+									.scale(animateScale)
+									.padding(1.dp)
+									.aspectRatio(1f)
+									.weight(1f, fill = false)
+							) {
+								val item by remember { derivedStateOf { it.items[i + offset] } } //todo ????
+								val imageBitmap by produceState<ImageBitmap?>(initialValue = null) {
+									value = imageBitmapCreator(item.img)
+								}
+								if (imageBitmap != null) {
+									AnimatedOnClickImage(
+										image = imageBitmap!!,
+										scope = scope,
+										modifier = Modifier
+											.padding(5.dp)
+											.scale(animateScale)
+									) {
+										scope.launch {
+											scale = 1.2f
+											delay(50)
+											scale = 1f
+										}
+										onClick(item)
 									}
 								}
 							}
@@ -315,10 +336,12 @@ fun MyCard(
 ) {
 	Box(
 		modifier = modifier
-			.background(MaterialTheme.colors.secondary, MaterialTheme.shapes.medium)
-			.border(2.dp, Color.Black, MaterialTheme.shapes.medium)
+			.background(
+				MaterialTheme.colors.secondary.copy(alpha = 0.8f),
+				MaterialTheme.shapes.medium
+			)
+			.border(1.dp, Color(0xFF_3787A1), MaterialTheme.shapes.medium)
 			.padding(2.dp),
-
 		contentAlignment = Alignment.Center,
 		content = content
 	)
@@ -337,8 +360,9 @@ fun AnimatedOnClickImage(
 	}
 	val anim by animateDpAsState(
 		targetValue = offset,
-		animationSpec = animationSpec// spring(dampingRatio = Spring.DampingRatioHighBouncy)
+		animationSpec = animationSpec
 	)
+
 	LaunchedEffect(key1 = "") {
 		offset = 0.dp
 	}
@@ -352,11 +376,6 @@ fun AnimatedOnClickImage(
 			)
 			.clickable {
 				onClick()
-				scope.launch {
-					offset = 5.dp
-					delay(100)
-					offset = 0.dp
-				}
 			}
 	)
 }
