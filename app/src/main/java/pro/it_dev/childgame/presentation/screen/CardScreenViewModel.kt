@@ -1,5 +1,6 @@
 package pro.it_dev.childgame.presentation.screen
 
+import android.text.style.BulletSpan
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,10 @@ class CardScreenViewModel @Inject constructor(
 
 	private val _cardsKit = mutableStateOf<Resource<CardsKit>>(Resource.Loading())
 	val cardsKit:State<Resource<CardsKit>> get() = _cardsKit
+
+
+
+	val aboutDialog = mutableStateOf<String?>(null)
 
 	val popUpMessage = mutableStateOf(-1)
 	private val _state = mutableStateOf(ScreenState.DEFAULT)
