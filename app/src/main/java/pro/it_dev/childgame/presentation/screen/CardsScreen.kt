@@ -1,48 +1,43 @@
 package pro.it_dev.childgame.presentation.screen
 
 import android.view.Gravity
-import android.view.MotionEvent
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.InsertEmoticon
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.focusModifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
+import pro.it_dev.childgame.presentation.dialogs.DialogWrapper
+import pro.it_dev.childgame.presentation.dialogs.menu.Menu
+import pro.it_dev.childgame.presentation.screen.jumping_buttons.ColorText
+import pro.it_dev.childgame.presentation.util.asStateEvent
 import pro.it_dev.childgame.util.Resource
 
 @Composable
@@ -58,38 +53,32 @@ fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewMode
 		contentAlignment = Alignment.TopCenter
 	) {
 		val headImg by produceState<ImageBitmap?>(initialValue = null) {
-			value = viewModel.getBitmap(screenData.data!!.kitPath+"/bg.jpg")
+			value = viewModel.getBitmap(screenData.data!!.kitPath + "/bg.jpg")
 		}
-		if (headImg!=null) Image(
+		if (headImg != null) Image(
 			bitmap = headImg!!,
 			contentDescription = null,
 			modifier = Modifier.fillMaxSize(),
-			contentScale = ContentScale.FillBounds)
+			contentScale = ContentScale.FillBounds
+		)
 		Column(
 			horizontalAlignment = Alignment.CenterHorizontally
 		) {
-			Text(
-				text = buildAnnotatedString {
-					var color = Color.Blue
-					withStyle(style = SpanStyle(color = color,fontSize = 40.sp)) {
-						append("А")
-					}
-					"ЗБУКВАРИ".forEach {
-						color = if (color == Color.Red) Color.Blue else Color.Red
-						withStyle(style = SpanStyle(color = color)) {
-							append(it)
+			ColorText(
+				text = "АЗБУКВАРИК",
+				modifier = Modifier.pointerInput(Unit) {
+					detectTapGestures(
+						onLongPress = {
+							viewModel.aboutDialog.value = ""
 						}
-					}
-					withStyle(style = SpanStyle(color = if (color == Color.Red) Color.Blue else Color.Red,fontSize = 40.sp)) {
-						append("К")
-					}
-				},
-				fontSize = 30.sp,
-				fontWeight = FontWeight.Bold,
-				modifier = Modifier
+					)
+				}
 			)
 
-			ScreenCardsStateWrapper(modifier = Modifier.weight(1f),cardsKit = screenData)
+
+
+
+			ScreenCardsStateWrapper(modifier = Modifier.weight(1f), cardsKit = screenData)
 
 			BottomButtons(
 				modifier = Modifier
@@ -99,9 +88,22 @@ fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewMode
 			)
 		}
 	}
+
+	viewModel.aboutDialog.asStateEvent {
+		DialogWrapper(
+			modifier = Modifier
+				.fillMaxWidth()
+				.fillMaxHeight(0.6f)
+			,
+			onDismissRequest = { it.value = null }
+		) {
+			// Config() { it.value = null }
+			// AboutScreen { it.value = null }
+			Menu()
+		}
+	}
+
 	ShowMessage(messageState = viewModel.popUpMessage)
-
-
 }
 
 @Composable
@@ -186,7 +188,12 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: CardScreenViewModel 
 }
 
 @Composable
-fun BottomIconButton(icon: ImageVector, bgColor:Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun BottomIconButton(
+	icon: ImageVector,
+	bgColor: Color,
+	modifier: Modifier = Modifier,
+	onClick: () -> Unit
+) {
 	IconButton(
 		modifier = modifier
 			.aspectRatio(1.3f)
@@ -221,7 +228,10 @@ fun ScreenCardsStateWrapper(
 	) {
 		when (cardsKit) {
 			is Resource.Loading -> CircularProgressIndicator()
-			is Resource.Error -> Text(text = cardsKit.message ?: "Unknown error!", color = Color.Red)
+			is Resource.Error -> Text(
+				text = cardsKit.message ?: "Unknown error!",
+				color = Color.Red
+			)
 			is Resource.Success -> {
 				CardItems(
 					cardsKit = cardsKit.data!!,
@@ -252,8 +262,7 @@ fun CardItems(
 				modifier = Modifier
 					.fillMaxHeight()
 					.weight(1f, true)
-					.padding(1.dp)
-				,
+					.padding(1.dp),
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.Center
 			) {
@@ -282,8 +291,7 @@ fun CardItems(
 
 				for (i in 0..it.items.lastIndex step 2) {
 					Row(
-						modifier = Modifier
-							,//.weight(1f, fill = false),
+						modifier = Modifier,//.weight(1f, fill = false),
 						horizontalArrangement = Arrangement.Center,
 						verticalAlignment = CenterVertically
 					) {

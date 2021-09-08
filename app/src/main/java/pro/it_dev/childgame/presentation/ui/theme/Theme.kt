@@ -22,7 +22,10 @@ private val LightColorPalette = lightColors(
 	onSecondary = Color(0xFF_3787A1),
 
 	background = Color(0xFF_AAE5F8),
-	onBackground = (Color(0xFF_3787A1))
+	onBackground = Color(0xFF_3787A1),
+
+	surface = Color(0xFF_AAE5F8),
+	onSurface = Color(0xFF_3787A1),
 	/* Other default colors to override
     background = Color.White,
     surface = Color.White,

@@ -16,7 +16,7 @@ val Typography = Typography(
 			Font(R.font.amatic_sc_bold, FontWeight.Bold)
 		),
 		fontWeight = FontWeight.Normal,
-		fontSize = 16.sp
+		fontSize = 18.sp
 	)
 	/* Other default text styles to override
     button = TextStyle(
