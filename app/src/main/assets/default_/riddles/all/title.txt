@@ -1,0 +1,14 @@
+All
+items_2/raduga
+items_1/photo
+items_1/fire
+items_1/pilesos
+items_1/airplane
+items_1/baraban
+items_1/train
+items_1/mobile
+items_1/velik
+items_1/clock
+items_1/chajnik
+items_1/ball
+items_1/colors

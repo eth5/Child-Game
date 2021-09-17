@@ -1,0 +1,13 @@
+Nature
+items_2/apple
+items_2/elka
+items_2/grib
+items_2/morkov
+items_2/rain
+items_2/romashka
+items_2/showman
+items_2/stars
+items_2/sun
+items_2/zemlyanika
+items_2/raduga
+items_2/river
