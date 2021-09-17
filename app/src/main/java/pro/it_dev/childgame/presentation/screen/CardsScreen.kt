@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
@@ -273,9 +274,6 @@ fun CardItems(
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.Center
 			) {
-				val headImg by produceState<ImageBitmap?>(initialValue = null) {
-					value = imageBitmapCreator(it.bigItem.img)
-				}
 				MyCard(
 					modifier = Modifier
 						.padding(1.dp)
@@ -283,19 +281,18 @@ fun CardItems(
 						.aspectRatio(1f)
 
 				) {
+					val headImg by produceState<ImageBitmap?>(initialValue = null) {
+						value = imageBitmapCreator(it.bigItem.img)
+					}
 					if (headImg != null) {
 						AnimatedOnClickImage(
 							image = headImg!!,
-							scope = scope,
 							modifier = Modifier
 								.aspectRatio(1f)
 								.size(10.dp)
 						) { onClick(it.bigItem) }
 					}
 				}
-
-				//Spacer(modifier = Modifier.height(5.dp))
-
 				for (i in 0..it.items.lastIndex step 2) {
 					Row(
 						modifier = Modifier,//.weight(1f, fill = false),
@@ -322,9 +319,8 @@ fun CardItems(
 								if (imageBitmap != null) {
 									AnimatedOnClickImage(
 										image = imageBitmap!!,
-										scope = scope,
 										modifier = Modifier
-											.padding(5.dp)
+											.padding(0.dp)
 											.scale(animateScale)
 									) {
 										scope.launch {
@@ -356,6 +352,7 @@ fun MyCard(
 				MaterialTheme.shapes.medium
 			)
 			.border(1.dp, Color(0xFF_3787A1), MaterialTheme.shapes.medium)
+			.clip(MaterialTheme.shapes.medium)
 			.padding(2.dp),
 		contentAlignment = Alignment.Center,
 		content = content
@@ -365,7 +362,6 @@ fun MyCard(
 @Composable
 fun AnimatedOnClickImage(
 	image: ImageBitmap,
-	scope: CoroutineScope,
 	modifier: Modifier,
 	animationSpec: AnimationSpec<Dp> = spring(dampingRatio = Spring.DampingRatioHighBouncy),
 	onClick: () -> Unit
@@ -378,13 +374,14 @@ fun AnimatedOnClickImage(
 		animationSpec = animationSpec
 	)
 
-	LaunchedEffect(key1 = "") {
+	LaunchedEffect(Unit) {
 		offset = 0.dp
 	}
 	Image(
 		bitmap = image,
 		contentDescription = null,
-		modifier = modifier
+		modifier = modifier.fillMaxSize()
+			//.border(1.dp,Color.Red)
 			.offset(
 				anim * if (Math.random() < 0.5f) -1 else 1,
 				anim * if (Math.random() < 0.5f) -1 else 1
