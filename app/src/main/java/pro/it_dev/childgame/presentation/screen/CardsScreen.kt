@@ -3,12 +3,10 @@ package pro.it_dev.childgame.presentation.screen
 import android.view.Gravity
 import android.widget.Toast
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.TextDelegate
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HelpOutline
@@ -19,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -27,7 +26,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -36,6 +38,7 @@ import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.presentation.dialogs.DialogWrapper
 import pro.it_dev.childgame.presentation.dialogs.menu.Menu
+import pro.it_dev.childgame.presentation.hint.popUpTest
 import pro.it_dev.childgame.presentation.screen.jumping_buttons.ColorText
 import pro.it_dev.childgame.presentation.util.asStateEvent
 import pro.it_dev.childgame.util.Resource
@@ -64,19 +67,22 @@ fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewMode
 		Column(
 			horizontalAlignment = Alignment.CenterHorizontally
 		) {
-			ColorText(
-				text = "АЗБУКВАРИК",
-				modifier = Modifier.pointerInput(Unit) {
-					detectTapGestures(
-						onLongPress = {
-							viewModel.aboutDialog.value = ""
-						}
-					)
-				}
-			)
 
-
-
+			Box(
+				modifier = Modifier
+			) {
+				ColorText(
+					text = "АЗБУКВАРИК",
+					modifier = Modifier.pointerInput(Unit) {
+						detectTapGestures(
+							onLongPress = {
+								viewModel.aboutDialog.value = ""
+							}
+						)
+					}
+				)
+			}
+			
 
 			ScreenCardsStateWrapper(modifier = Modifier.weight(1f), cardsKit = screenData)
 
@@ -93,7 +99,8 @@ fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewMode
 		DialogWrapper(
 			modifier = Modifier
 				.fillMaxWidth()
-				.fillMaxHeight(0.6f)
+				.height(400.dp)
+				//.fillMaxHeight(0.8f)
 			,
 			onDismissRequest = { it.value = null }
 		) {
