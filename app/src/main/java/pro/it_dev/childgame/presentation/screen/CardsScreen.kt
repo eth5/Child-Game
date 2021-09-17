@@ -6,7 +6,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.TextDelegate
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HelpOutline
@@ -17,8 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -27,19 +24,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.presentation.dialogs.DialogWrapper
 import pro.it_dev.childgame.presentation.dialogs.menu.Menu
-import pro.it_dev.childgame.presentation.hint.popUpTest
 import pro.it_dev.childgame.presentation.screen.jumping_buttons.ColorText
 import pro.it_dev.childgame.presentation.util.asStateEvent
 import pro.it_dev.childgame.util.Resource
@@ -274,7 +266,7 @@ fun CardItems(
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.Center
 			) {
-				MyCard(
+				CardSurface(
 					modifier = Modifier
 						.padding(1.dp)
 						.weight(1f, fill = false)
@@ -285,12 +277,23 @@ fun CardItems(
 						value = imageBitmapCreator(it.bigItem.img)
 					}
 					if (headImg != null) {
-						AnimatedOnClickImage(
-							image = headImg!!,
-							modifier = Modifier
-								.aspectRatio(1f)
-								.size(10.dp)
-						) { onClick(it.bigItem) }
+
+						Image(
+							bitmap = headImg!!,
+							contentDescription = null,
+							modifier = animationModifier(Modifier)
+								.fillMaxSize()
+								.clickable {
+
+								}
+						)
+
+//						AnimatedOnClickImage(
+//							image = headImg!!,
+//							modifier = Modifier
+//								.aspectRatio(1f)
+//								.size(10.dp)
+//						) { onClick(it.bigItem) }
 					}
 				}
 				for (i in 0..it.items.lastIndex step 2) {
@@ -305,7 +308,7 @@ fun CardItems(
 								targetValue = scale,
 								animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)
 							)
-							MyCard(
+							CardSurface(
 								modifier = Modifier
 									.scale(animateScale)
 									.padding(1.dp)
@@ -317,19 +320,23 @@ fun CardItems(
 									value = imageBitmapCreator(item.img)
 								}
 								if (imageBitmap != null) {
-									AnimatedOnClickImage(
-										image = imageBitmap!!,
-										modifier = Modifier
-											.padding(0.dp)
+
+									Image(
+										bitmap = imageBitmap!!,
+										contentDescription = null,
+										modifier = animationModifier(Modifier)
+											.fillMaxSize()
 											.scale(animateScale)
-									) {
-										scope.launch {
-											scale = 1.2f
-											delay(50)
-											scale = 1f
-										}
-										onClick(item)
-									}
+											.clickable {
+												scope.launch {
+													scale = 1.2f
+													delay(50)
+													scale = 1f
+												}
+												onClick(item)
+											}
+									)
+
 								}
 							}
 						}
@@ -340,32 +347,31 @@ fun CardItems(
 	}
 }
 
+
+
 @Composable
-fun MyCard(
+fun CardSurface(
 	modifier: Modifier,
-	content: @Composable BoxScope.() -> Unit
+	content: @Composable () -> Unit
 ) {
-	Box(
+	val color = remember {Color(0xFF_3787A1)}//todo перенести
+	Surface(
 		modifier = modifier
-			.background(
-				MaterialTheme.colors.secondary.copy(alpha = 0.8f),
-				MaterialTheme.shapes.medium
-			)
-			.border(1.dp, Color(0xFF_3787A1), MaterialTheme.shapes.medium)
-			.clip(MaterialTheme.shapes.medium)
-			.padding(2.dp),
-		contentAlignment = Alignment.Center,
+			.padding(0.dp),
+		elevation = 10.dp,
+		color = MaterialTheme.colors.secondary.copy(alpha = 0.8f),
+		border = BorderStroke(1.dp,color),
+		shape = MaterialTheme.shapes.medium,
 		content = content
 	)
 }
 
+
 @Composable
-fun AnimatedOnClickImage(
-	image: ImageBitmap,
+fun animationModifier(
 	modifier: Modifier,
 	animationSpec: AnimationSpec<Dp> = spring(dampingRatio = Spring.DampingRatioHighBouncy),
-	onClick: () -> Unit
-) {
+):Modifier {
 	var offset by remember {
 		mutableStateOf(500.dp)
 	}
@@ -373,21 +379,11 @@ fun AnimatedOnClickImage(
 		targetValue = offset,
 		animationSpec = animationSpec
 	)
-
 	LaunchedEffect(Unit) {
 		offset = 0.dp
 	}
-	Image(
-		bitmap = image,
-		contentDescription = null,
-		modifier = modifier.fillMaxSize()
-			//.border(1.dp,Color.Red)
-			.offset(
-				anim * if (Math.random() < 0.5f) -1 else 1,
-				anim * if (Math.random() < 0.5f) -1 else 1
-			)
-			.clickable {
-				onClick()
-			}
+	return modifier.offset(
+		anim * if (Math.random() < 0.5f) -1 else 1,
+		anim * if (Math.random() < 0.5f) -1 else 1
 	)
 }
