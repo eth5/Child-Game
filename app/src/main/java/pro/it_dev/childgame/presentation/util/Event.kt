@@ -8,10 +8,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("ComposableNaming")
 @Composable
 fun <T>MutableState<T?>.asStateEvent(handler: @Composable (MutableState<T?>)->Unit) {
-	val event by remember {
-		this
-	}
-	if (event != null){
+	if (this.value != null){
 		handler(this)
 	}
 }

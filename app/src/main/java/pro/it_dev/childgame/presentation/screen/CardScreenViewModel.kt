@@ -40,7 +40,7 @@ class CardScreenViewModel @Inject constructor(
 
 
 
-	val aboutDialog = mutableStateOf<String?>(null)
+	val showMenu = mutableStateOf<Boolean>(false)
 
 	val popUpMessage = mutableStateOf(-1)
 	private val _state = mutableStateOf(ScreenState.DEFAULT)
@@ -120,5 +120,9 @@ class CardScreenViewModel @Inject constructor(
 			}
 
 		}
+	}
+
+	fun onLongPressToLogo() {
+		showMenu.value = true
 	}
 }

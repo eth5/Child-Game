@@ -1,6 +1,5 @@
 package pro.it_dev.childgame.presentation.screen
 
-import android.view.Gravity
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -26,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.it_dev.childgame.domain.CardsKit
@@ -33,78 +33,139 @@ import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.presentation.dialogs.DialogWrapper
 import pro.it_dev.childgame.presentation.dialogs.menu.Menu
 import pro.it_dev.childgame.presentation.screen.jumping_buttons.ColorText
-import pro.it_dev.childgame.presentation.util.asStateEvent
 import pro.it_dev.childgame.util.Resource
 
 @Composable
 fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewModel()) {
-
-	LaunchedEffect(key1 = itemsPath, block = { viewModel.loadCards(itemsPath) })
-
-	val screenData by remember {
+	LaunchedEffect(key1 = itemsPath, block = { viewModel.loadCards(itemsPath) }) //todo переделать
+	val cardsKit by remember {
 		viewModel.cardsKit
 	}
 	Box(
 		modifier = Modifier.fillMaxSize(),
 		contentAlignment = Alignment.TopCenter
 	) {
-		val headImg by produceState<ImageBitmap?>(initialValue = null) {
-			value = viewModel.getBitmap(screenData.data!!.kitPath + "/bg.jpg")
-		}
-		if (headImg != null) Image(
-			bitmap = headImg!!,
-			contentDescription = null,
-			modifier = Modifier.fillMaxSize(),
-			contentScale = ContentScale.FillBounds
+		ScreenCardsStateWrapper(cardsKit = cardsKit)
+	}
+
+	ShowMenuDialog(show = viewModel.showMenu)
+	ShowMessage(message = viewModel.popUpMessage)
+}
+
+@Composable
+fun ScreenCardsStateWrapper(
+	cardsKit: Resource<CardsKit>,
+	viewModel: CardScreenViewModel = hiltViewModel()
+) {
+	when (cardsKit) {
+		is Resource.Loading -> CircularProgressIndicator()
+		is Resource.Error -> Text(
+			text = cardsKit.message ?: "Unknown error!",
+			color = Color.Red
 		)
-		Column(
-			horizontalAlignment = Alignment.CenterHorizontally
-		) {
-
-			Box(
-				modifier = Modifier
-			) {
-				ColorText(
-					text = "АЗБУКВАРИК",
-					modifier = Modifier.pointerInput(Unit) {
-						detectTapGestures(
-							onLongPress = {
-								viewModel.aboutDialog.value = ""
-							}
-						)
-					}
-				)
-			}
-			
-
-			ScreenCardsStateWrapper(modifier = Modifier.weight(1f), cardsKit = screenData)
-
-			BottomButtons(
-				modifier = Modifier
-					.fillMaxWidth()
-					.requiredHeight(40.dp)
-					.padding(bottom = 2.dp)
+		is Resource.Success -> {
+			CardKitScope(
+				cardsKit = cardsKit.data!!,
+				viewModel = viewModel
 			)
 		}
 	}
+}
 
-	viewModel.aboutDialog.asStateEvent {
-		DialogWrapper(
+@Composable
+fun CardKitScope(
+	cardsKit: CardsKit,
+	viewModel: CardScreenViewModel
+) {
+	val scope = rememberCoroutineScope()
+	BackGroundImage(path = cardsKit.kitPath + "/bg.jpg", viewModel = viewModel)
+	Column(
+		modifier = Modifier
+			.fillMaxSize(),
+		horizontalAlignment = Alignment.CenterHorizontally
+	) {
+		Box(
+			modifier = Modifier
+		) {
+			ColorText(
+				text = "АЗБУКВАРИК",
+				modifier = Modifier.pointerInput(Unit) {
+					detectTapGestures(
+						onLongPress = {
+							viewModel.onLongPressToLogo()
+						}
+					)
+				}
+			)
+		}
+		Row(
+			modifier = Modifier
+				.weight(1f)
+				.fillMaxSize(),
+			horizontalArrangement = Arrangement.Center,
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			cardsKit.itemsGroupList.forEach {
+				Column(
+					modifier = Modifier
+						.fillMaxHeight()
+						.weight(1f, true)
+						.padding(1.dp),
+					horizontalAlignment = Alignment.CenterHorizontally,
+					verticalArrangement = Arrangement.Center
+				) {
+					CardScope(
+						item = it.bigItem,
+						modifier = Modifier.weight(1f,false),
+						scope = scope,
+						imageBitmapCreator = viewModel::getBitmap,
+						onClick = viewModel::clickIcon
+					)
+					for (i in 0..it.items.lastIndex step 2) {
+						Row(
+							modifier = Modifier,
+							horizontalArrangement = Arrangement.Center,
+							verticalAlignment = CenterVertically
+						) {
+							for (offset in 0..1) {
+								CardScope(
+									item = it.items[i + offset],
+									modifier = Modifier.weight(1f, fill = false),
+									scope = scope,
+									imageBitmapCreator = viewModel::getBitmap,
+									onClick = viewModel::clickIcon
+								)
+							}
+						}
+					}
+				}
+			}
+		}
+		BottomButtons(
 			modifier = Modifier
 				.fillMaxWidth()
-				.height(400.dp)
-				//.fillMaxHeight(0.8f)
-			,
-			onDismissRequest = { it.value = null }
-		) {
-			// Config() { it.value = null }
-			// AboutScreen { it.value = null }
-			Menu()
-		}
+				.requiredHeight(40.dp)
+				.padding(bottom = 2.dp)
+		)
 	}
 
-	ShowMessage(messageState = viewModel.popUpMessage)
 }
+
+
+@Composable
+fun BackGroundImage(path:String, viewModel: CardScreenViewModel) {
+	val bgImage by produceState<ImageBitmap?>(initialValue = null) {
+		value = viewModel.getBitmap(path)
+	}
+	if (bgImage != null) Image(
+		bitmap = bgImage!!,
+		contentDescription = null,
+		modifier = Modifier.fillMaxSize(),
+		contentScale = ContentScale.FillBounds
+	)
+}
+
+
 
 @Composable
 fun VolumeBar(volume: Float, onVolumeChanged: (Float) -> Unit, modifier: Modifier) {
@@ -127,17 +188,30 @@ fun VolumeBar(volume: Float, onVolumeChanged: (Float) -> Unit, modifier: Modifie
 }
 
 @Composable
-fun ShowMessage(messageState: MutableState<Int>) {
-	var textRes by remember { messageState }
-	val ctx = LocalContext.current
-	if (textRes != -1) {
-		LaunchedEffect(key1 = "") {
-			//scaffoldState.snackbarHostState.showSnackbar(text)
-			Toast.makeText(ctx, ctx.getText(textRes), Toast.LENGTH_SHORT).also {
-				it.setGravity(Gravity.TOP, 0, 0)
-			}.show()
+fun ShowMenuDialog(show:MutableState<Boolean>) {
+	if (show.value){
+		DialogWrapper(
+			modifier = Modifier
+				.fillMaxWidth()
+				.height(400.dp),
+			onDismissRequest = { show.value = false }
+		) {
+			Menu()
+		}
+	}
+}
 
-			textRes = -1
+@Composable
+fun ShowMessage(message: MutableState<Int>) {
+	val toast = remember { mutableStateOf<Toast?>(null) }
+	if (message.value != -1) {
+		val ctx = LocalContext.current
+		SideEffect {
+			toast.value?.cancel()
+			val toastInstance = Toast.makeText(ctx, ctx.getText(message.value), Toast.LENGTH_SHORT)
+			toast.value = toastInstance
+			toastInstance.show()
+			message.value = -1
 		}
 	}
 }
@@ -148,12 +222,10 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: CardScreenViewModel 
 		modifier = modifier,
 		horizontalArrangement = Arrangement.Center
 	) {
-		val state by remember {
-			viewModel.state
-		}
+		val screenState by viewModel.state
 		BottomIconButton(
 			icon = Icons.Default.HelpOutline,
-			bgColor = if (state == ScreenState.QUESTION) LocalContentColor.current.copy(
+			bgColor = if (screenState == ScreenState.QUESTION) LocalContentColor.current.copy(
 				alpha = LocalContentAlpha.current,
 				red = 0f,
 				green = 0.7f,
@@ -172,7 +244,7 @@ fun BottomButtons(modifier: Modifier = Modifier, viewModel: CardScreenViewModel 
 		Spacer(modifier = Modifier.width(50.dp))
 		BottomIconButton(
 			icon = Icons.Default.InsertEmoticon,
-			bgColor = if (state == ScreenState.DEFAULT)
+			bgColor = if (screenState == ScreenState.DEFAULT)
 				LocalContentColor.current.copy(
 					alpha = LocalContentAlpha.current,
 					red = 0f,
@@ -192,11 +264,12 @@ fun BottomIconButton(
 	icon: ImageVector,
 	bgColor: Color,
 	modifier: Modifier = Modifier,
+	contentDescription:String? = null,
 	onClick: () -> Unit
 ) {
 	IconButton(
 		modifier = modifier
-			.aspectRatio(1.3f)
+			.aspectRatio(1.5f)
 			.border(2.dp, color = Color(0xFF_3787A1), MaterialTheme.shapes.medium)
 			.background(
 				color = bgColor,
@@ -209,140 +282,47 @@ fun BottomIconButton(
 			modifier = Modifier
 				.fillMaxSize()
 				.padding(2.dp),
-			contentDescription = "",
+			contentDescription = contentDescription,
 			tint = MaterialTheme.colors.onSecondary
 		)
 	}
 }
 
 
+
+
 @Composable
-fun ScreenCardsStateWrapper(
-	cardsKit: Resource<CardsKit>,
-	modifier: Modifier,
-	viewModel: CardScreenViewModel = hiltViewModel()
-) {
-	Box(
-		modifier = modifier.fillMaxSize(),
-		contentAlignment = Alignment.Center
+fun CardScope(item:Item, modifier: Modifier, scope:CoroutineScope, imageBitmapCreator: suspend (String) -> ImageBitmap, onClick: (Item) -> Unit) {
+	var scale by remember { mutableStateOf(1f) }
+	val animateScale by animateFloatAsState(
+		targetValue = scale,
+		animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)
+	)
+	CardSurface(
+		modifier = modifier
+			.scale(animateScale)
+			.padding(1.dp)
+			.aspectRatio(1f)
 	) {
-		when (cardsKit) {
-			is Resource.Loading -> CircularProgressIndicator()
-			is Resource.Error -> Text(
-				text = cardsKit.message ?: "Unknown error!",
-				color = Color.Red
-			)
-			is Resource.Success -> {
-				CardItems(
-					cardsKit = cardsKit.data!!,
-					imageBitmapCreator = viewModel::getBitmap,
-					viewModel::clickIcon
-				)
-			}
+		val imageBitmap by produceState<ImageBitmap?>(initialValue = null) {
+			value = imageBitmapCreator(item.img)
 		}
-	}
-
-}
-
-
-@Composable
-fun CardItems(
-	cardsKit: CardsKit,
-	imageBitmapCreator: suspend (String) -> ImageBitmap,
-	onClick: (Item) -> Unit
-) {
-	val scope = rememberCoroutineScope()
-	Row(
-		modifier = Modifier.fillMaxSize(),
-		horizontalArrangement = Arrangement.Center,
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		cardsKit.itemsGroupList.forEach {
-			Column(
-				modifier = Modifier
-					.fillMaxHeight()
-					.weight(1f, true)
-					.padding(1.dp),
-				horizontalAlignment = Alignment.CenterHorizontally,
-				verticalArrangement = Arrangement.Center
-			) {
-				CardSurface(
-					modifier = Modifier
-						.padding(1.dp)
-						.weight(1f, fill = false)
-						.aspectRatio(1f)
-
-				) {
-					val headImg by produceState<ImageBitmap?>(initialValue = null) {
-						value = imageBitmapCreator(it.bigItem.img)
-					}
-					if (headImg != null) {
-
-						Image(
-							bitmap = headImg!!,
-							contentDescription = null,
-							modifier = animationModifier(Modifier)
-								.fillMaxSize()
-								.clickable {
-
-								}
-						)
-
-//						AnimatedOnClickImage(
-//							image = headImg!!,
-//							modifier = Modifier
-//								.aspectRatio(1f)
-//								.size(10.dp)
-//						) { onClick(it.bigItem) }
-					}
-				}
-				for (i in 0..it.items.lastIndex step 2) {
-					Row(
-						modifier = Modifier,//.weight(1f, fill = false),
-						horizontalArrangement = Arrangement.Center,
-						verticalAlignment = CenterVertically
-					) {
-						for (offset in 0..1) {
-							var scale by remember { mutableStateOf(1f) }
-							val animateScale by animateFloatAsState(
-								targetValue = scale,
-								animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy)
-							)
-							CardSurface(
-								modifier = Modifier
-									.scale(animateScale)
-									.padding(1.dp)
-									.aspectRatio(1f)
-									.weight(1f, fill = false)
-							) {
-								val item by remember { derivedStateOf { it.items[i + offset] } } //todo ????
-								val imageBitmap by produceState<ImageBitmap?>(initialValue = null) {
-									value = imageBitmapCreator(item.img)
-								}
-								if (imageBitmap != null) {
-
-									Image(
-										bitmap = imageBitmap!!,
-										contentDescription = null,
-										modifier = animationModifier(Modifier)
-											.fillMaxSize()
-											.scale(animateScale)
-											.clickable {
-												scope.launch {
-													scale = 1.2f
-													delay(50)
-													scale = 1f
-												}
-												onClick(item)
-											}
-									)
-
-								}
-							}
+		if (imageBitmap != null) {
+			Image(
+				bitmap = imageBitmap!!,
+				contentDescription = null,
+				modifier = animationModifier(Modifier)
+					.fillMaxSize()
+					.clickable {
+						scope.launch {
+							scale = 1.2f
+							delay(50)
+							scale = 1f
 						}
+						onClick(item)
 					}
-				}
-			}
+			)
+
 		}
 	}
 }
