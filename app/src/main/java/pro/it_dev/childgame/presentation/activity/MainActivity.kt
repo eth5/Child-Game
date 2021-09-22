@@ -9,7 +9,8 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
-import pro.it_dev.childgame.presentation.screen.CardsScreen
+import pro.it_dev.childgame.presentation.navigation.Navigation
+import pro.it_dev.childgame.presentation.screen.cards.CardsScreen
 import pro.it_dev.childgame.presentation.ui.theme.ChildGameTheme
 import java.util.*
 
@@ -42,10 +43,14 @@ class MainActivity : ComponentActivity() {
 					color = MaterialTheme.colors.background,
 					modifier = Modifier.fillMaxSize()
 				) {
-					CardsScreen("default_")
+					Navigation()
 				}
 			}
 		}
+//		private void signIn() {
+//			Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+//			startActivityForResult(signInIntent, RC_SIGN_IN);
+//		}
 	}
 }
 

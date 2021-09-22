@@ -1,4 +1,4 @@
-package pro.it_dev.childgame.presentation.screen
+package pro.it_dev.childgame.presentation.screen.cards
 
 import android.widget.Toast
 import androidx.compose.animation.core.*
@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -32,11 +33,13 @@ import pro.it_dev.childgame.domain.CardsKit
 import pro.it_dev.childgame.domain.Item
 import pro.it_dev.childgame.presentation.dialogs.DialogWrapper
 import pro.it_dev.childgame.presentation.dialogs.menu.Menu
+import pro.it_dev.childgame.presentation.screen.CardScreenViewModel
+import pro.it_dev.childgame.presentation.screen.ScreenState
 import pro.it_dev.childgame.presentation.screen.jumping_buttons.ColorText
 import pro.it_dev.childgame.util.Resource
 
 @Composable
-fun CardsScreen(itemsPath: String, viewModel: CardScreenViewModel = hiltViewModel()) {
+fun CardsScreen(navController: NavController, itemsPath: String, viewModel: CardScreenViewModel = hiltViewModel()) {
 	LaunchedEffect(key1 = itemsPath, block = { viewModel.loadCards(itemsPath) }) //todo переделать
 	val cardsKit by remember {
 		viewModel.cardsKit

@@ -1,11 +1,16 @@
 package pro.it_dev.childgame.di
 
 import android.content.Context
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import pro.it_dev.childgame.auth.IAuth
+import pro.it_dev.childgame.auth.User
+import pro.it_dev.childgame.auth.firebase.AuthFirebase
+import pro.it_dev.childgame.auth.firebase.NoGoogleAuthFirebase
 import pro.it_dev.childgame.presentation.android_bitmap_factory.AssetsFilesBitmapFactory
 import pro.it_dev.childgame.presentation.android_bitmap_factory.IBitmapFactory
 import pro.it_dev.childgame.presentation.fxplayer.AssetAndroidMediaPlayer
@@ -40,5 +45,12 @@ object AppModule {
 	@Provides
 	fun provideBitmapFactory(fm: IFileManager): IBitmapFactory{
 		return AssetsFilesBitmapFactory(fm)
+	}
+	@Singleton
+	@Provides
+	fun provideAuth(fm: IFileManager): IAuth<User>{
+		val instance = FirebaseAuth.getInstance()
+		return if (instance==null) NoGoogleAuthFirebase()
+		else AuthFirebase(FirebaseAuth.getInstance())
 	}
 }
