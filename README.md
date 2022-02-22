@@ -2,5 +2,5 @@
 
 - In developing now...
 
-old -> ![](http://it-dev.pro/dev_git/child-game/img.png)
-now -> ![](http://it-dev.pro/dev_git/child-game/screen_now.jpg)
+old -> ![](http://dev4game.com/dev_git/child-game/img.png)
+now -> ![](http://dev4game.com/dev_git/child-game/screen_now.jpg)
